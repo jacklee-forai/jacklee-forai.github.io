@@ -1,0 +1,47 @@
+name: Update lotto data
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/update-lotto.yml'
+      - 'scripts/update-lotto.mjs'
+  workflow_dispatch:
+  schedule:
+    - cron: '30,45 13 * * *'
+    - cron: '0,15,30,45 14-15 * * *'
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: update-lotto-main
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Fetch Taiwan Lottery data
+        run: node scripts/update-lotto.mjs
+      - name: Commit updated data
+        id: commit
+        run: |
+          if git diff --quiet -- data/lotto.json; then
+            echo "No data changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/lotto.json
+          git commit -m "Update lotto data"
+          git push
+          echo "updated=true" >> "$GITHUB_OUTPUT"
+      - name: Rebuild GitHub Pages from main
+        if: steps.commit.outputs.updated == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
