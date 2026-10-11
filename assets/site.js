@@ -3,7 +3,7 @@
   const fmt=n=>Number(n||0).toFixed(1)+'%';
   function balls(draw,special){
     const main=(draw||[]).map(n=>`<span class="ball">${String(n).padStart(2,'0')}</span>`).join('');
-    const sp=special?`<span class="ball special" title="特別號">${String(special).padStart(2,'0')}</span>`:'';
+    const sp=special?`<span class="special-group"><span class="ball special" title="特別號">${String(special).padStart(2,'0')}</span><span class="special-label">特別號</span></span>`:'';
     return main+sp;
   }
   function mini(draw){return (draw||[]).map(n=>`<span class="mini-ball">${String(n).padStart(2,'0')}</span>`).join('')}
@@ -12,10 +12,19 @@
     const latest=data.latest||{};
     if($('latestBalls'))$('latestBalls').innerHTML=balls(latest.draw,latest.special);
     if($('latestMeta'))$('latestMeta').textContent=latest.period?`第 ${latest.period} 期｜${latest.date||''}`:(latest.date||'等待最新資料');
-    if($('updatedAt'))$('updatedAt').textContent=data.updatedAt?new Date(data.updatedAt).toLocaleString('zh-TW',{hour12:false}):'—';
+    if($('updatedAt'))$('updatedAt').textContent=data.updatedAt?new Date(data.updatedAt).toLocaleString('zh-TW',{hour12:false,timeZone:'Asia/Taipei'}):'—';
     if($('recordCount'))$('recordCount').textContent=String(data.recordCount||0);
     if($('latestSpan'))$('latestSpan').textContent=latest.span==null?'—':String(latest.span);
     if($('latestSum'))$('latestSum').textContent=latest.sum==null?'—':String(latest.sum);
+    const draw=latest.draw;
+    if(Array.isArray(draw)&&draw.length===6){
+      const tails=[...new Set(draw.map(n=>n%10))].sort((a,b)=>a-b);
+      const odd=draw.filter(n=>n%2!==0).length;
+      if($('latestTailKinds'))$('latestTailKinds').textContent=String(tails.length);
+      if($('latestTails'))$('latestTails').innerHTML=tails.map(n=>`<span class="tail-chip">${n}</span>`).join('');
+      if($('latestOddCount'))$('latestOddCount').textContent=String(odd);
+      if($('latestEvenCount'))$('latestEvenCount').textContent=String(draw.length-odd);
+    }
     if($('overdueCount'))$('overdueCount').textContent=String((data.overdue20||[]).length);
     if($('overdueNums'))$('overdueNums').innerHTML=(data.overdue20||[]).length?(data.overdue20||[]).map(n=>`<span class="chip">${String(n).padStart(2,'0')}</span>`).join(''):'<span class="loading">目前沒有 20 期以上未開出的號碼</span>';
     bars('spanBars',[['5–13','5–13'],['14–22','14–22'],['23–31','23–31'],['32–40','32–40'],['41–48','41–48']],data.stats?.spanPct);
